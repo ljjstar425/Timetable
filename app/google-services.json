@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "513570987384",
+    "project_id": "voiceday-7954d",
+    "storage_bucket": "voiceday-7954d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:513570987384:android:c455f0f10919f90b937c8d",
+        "android_client_info": {
+          "package_name": "com.bar.timetable2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1dwkObeUUsAZU2VHxhqpbDM9mgcwS80Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
