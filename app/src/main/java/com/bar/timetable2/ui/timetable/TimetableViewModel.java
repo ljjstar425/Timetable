@@ -79,6 +79,31 @@ public class TimetableViewModel extends ViewModel {
         return addClassResult;
     }
 
+    // ===== 수업 삭제 결과 =====
+    public static class DeleteClassResult {
+        public boolean success;
+        public String errorMessage;
+
+        public static DeleteClassResult success() {
+            DeleteClassResult r = new DeleteClassResult();
+            r.success = true;
+            return r;
+        }
+
+        public static DeleteClassResult error(String msg) {
+            DeleteClassResult r = new DeleteClassResult();
+            r.success = false;
+            r.errorMessage = msg;
+            return r;
+        }
+    }
+
+    private final MutableLiveData<DeleteClassResult> deleteClassResult = new MutableLiveData<>();
+
+    public LiveData<DeleteClassResult> getDeleteClassResult() {
+        return deleteClassResult;
+    }
+
     // 수업 추가 메서드
     public void addClass(Course course, List<ClassSlot> slots) {
         Log.e("TT-VM", "addClass() 호출됨, slots=" + (slots != null ? slots.size() : 0));
@@ -99,6 +124,27 @@ public class TimetableViewModel extends ViewModel {
             }
         });
     }
+
+    // 수업 삭제 메서드
+    public void deleteClass(String courseId) {
+        Log.e("TT-VM", "deleteClass() 호출됨, courseId=" + courseId);
+
+        repository.deleteCourseWithSlots(courseId, new TimetableRepository.DeleteClassCallback() {
+            @Override
+            public void onSuccess() {
+                Log.e("TT-VM", "deleteClass 성공");
+                deleteClassResult.postValue(DeleteClassResult.success());
+                // Firestore snapshot listener가 알아서 timetableState 갱신
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e("TT-VM", "deleteClass 실패: " + e.getMessage());
+                deleteClassResult.postValue(DeleteClassResult.error(e.getMessage()));
+            }
+        });
+    }
+
 
     @Override
     protected void onCleared() {

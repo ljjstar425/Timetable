@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/tvClassName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="과목명"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvClassTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="요일/시간"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tvClassLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="강의실"
+        android:layout_marginTop="4dp" />
+
+    <Button
+        android:id="@+id/btnDeleteClass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="수업 삭제"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/btnClose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="닫기"
+        android:layout_marginTop="8dp" />
+</LinearLayout>

@@ -20,7 +20,7 @@ public class FirestoreClient {
 //        if (FirebaseAuth.getInstance().getCurrentUser() == null) return null;
 //        return FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        return "test-user-1"; // 🔥 임시 유저 아이디
+        return "test-user-1"; // 확인용 임시 유저 아이디
     }
 
     public CollectionReference getMyCoursesCollection() {

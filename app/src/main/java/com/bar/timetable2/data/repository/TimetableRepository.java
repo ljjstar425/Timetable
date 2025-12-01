@@ -151,9 +151,46 @@ public class TimetableRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    // --------------------------------------------
-    // course + slots 등록/삭제 관련 메서드는
-    // 다음 단계에서 "겹침 체크" 로직이랑 같이 detail 짤 예정.
-    // --------------------------------------------
+    // ===== 수업 삭제 콜백 =====
+    public interface DeleteClassCallback {
+        void onSuccess();
+        void onError(Exception e);
+    }
+
+    // ===== 수업(과목) + 관련 슬롯 전체 삭제 =====
+    public void deleteCourseWithSlots(String courseId, DeleteClassCallback callback) {
+        FirebaseFirestore db = client.getDb();
+
+        // 1) 과목 문서 레퍼런스
+        DocumentReference courseRef = client.getMyCoursesCollection().document(courseId);
+
+        // 2) 해당 courseId를 가진 슬롯들 조회
+        client.getMySlotsCollection()
+                .whereEqualTo("courseId", courseId)
+                .get()
+                .addOnSuccessListener((QuerySnapshot snapshot) -> {
+                    WriteBatch batch = db.batch();
+
+                    // 과목 삭제
+                    batch.delete(courseRef);
+
+                    // 슬롯들 삭제
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        batch.delete(doc.getReference());
+                    }
+
+                    // 3) 배치 커밋
+                    batch.commit()
+                            .addOnSuccessListener(unused -> {
+                                if (callback != null) callback.onSuccess();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (callback != null) callback.onError(e);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError(e);
+                });
+    }
 
 }

@@ -4,8 +4,11 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -30,6 +33,8 @@ public class TimetableView extends View {
     private static final String[] DAY_LABELS = {
             "", "월", "화", "수", "목", "금", "토", "일"
     };
+    private final List<Rect> slotRects = new ArrayList<>();
+    private final List<ClassSlot> slotRectsSlots = new ArrayList<>();
 
     // 화면 여백
     private float topHeaderHeight;
@@ -55,6 +60,18 @@ public class TimetableView extends View {
     private int visibleEndHour = DEFAULT_END_HOUR;
 
     private List<Integer> activeDays = new ArrayList<>();  // 실제 표시할 요일들 (1~7)
+
+    // 블록 클릭 콜백 인터페이스
+    public interface OnSlotClickListener {
+        void onSlotClick(ClassSlot slot);
+    }
+
+    private OnSlotClickListener onSlotClickListener;
+
+    // 외부에서 리스너 설정
+    public void setOnSlotClickListener(OnSlotClickListener listener) {
+        this.onSlotClickListener = listener;
+    }
 
     public TimetableView(Context context) {
         super(context);
@@ -99,6 +116,7 @@ public class TimetableView extends View {
         // 🔥 기본 활성 요일: 월~금 (데이터 없을 때도 비어있지 않게)
         recomputeActiveDays();
     }
+
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -191,6 +209,9 @@ public class TimetableView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        slotRects.clear();
+        slotRectsSlots.clear();
+
         canvas.drawRect(0, 0, viewWidth, viewHeight, backgroundPaint);
 
         float contentLeft = leftTimeWidth;
@@ -255,61 +276,59 @@ public class TimetableView extends View {
                                   float columnWidth,
                                   float rowHeight) {
 
+        if (timetableState == null || timetableState.getSlots() == null) return;
+
         List<ClassSlot> slots = timetableState.getSlots();
-        Map<String, Course> courseMap = timetableState.getCourseMap();
-
-        if (slots == null || courseMap == null) return;
-
-        int totalMinutes = (visibleEndHour - visibleStartHour) * MINUTES_PER_HOUR;
-        if (totalMinutes <= 0) return;
 
         for (ClassSlot slot : slots) {
             if (slot == null) continue;
 
-            int dayOfWeek = slot.getDayOfWeek();
-            int colIndex = activeDays.indexOf(dayOfWeek);
-            if (colIndex < 0) continue; // 표시 안 하는 요일이면 스킵
+            int dayOfWeek = slot.getDayOfWeek();   // 1~7 (월~일)
+            int startMin = slot.getStartMin();     // 분 단위
+            int endMin   = slot.getEndMin();
 
-            int startMin = slot.getStartMin();
-            int endMin = slot.getEndMin();
-            if (endMin <= startMin) continue;
+            // 1) 이 요일이 activeDays에 있는지 확인 (월~금만 쓰는 경우 등)
+            int dayIndex = activeDays.indexOf(dayOfWeek);
+            if (dayIndex < 0) continue; // 이 요일은 안 그리는 요일이면 건너뜀
 
-            int startOffset = startMin - visibleStartHour * MINUTES_PER_HOUR;
-            int endOffset = endMin - visibleStartHour * MINUTES_PER_HOUR;
+            // 2) 시간 범위가 현재 보이는 범위(visibleStartHour~visibleEndHour)에 들어오는지
+            float totalMinutesPerHour = 60f;
+            float minutesFromStart = (startMin - visibleStartHour * 60);
+            float minutesToEnd     = (endMin - visibleStartHour * 60);
 
-            float top = contentTop + (startOffset / (float) totalMinutes) * (contentBottom - contentTop);
-            float bottom = contentTop + (endOffset / (float) totalMinutes) * (contentBottom - contentTop);
-
-            float left = contentLeft + columnWidth * colIndex + 2;
-            float right = contentLeft + columnWidth * (colIndex + 1) - 2;
-
-            Course course = courseMap.get(slot.getCourseId());
-            int color = parseCourseColor(course);
-            blockPaint.setColor(color);
-
-            canvas.drawRoundRect(left, top, right, bottom, 12, 12, blockPaint);
-
-            if (course != null && !TextUtils.isEmpty(course.getName())) {
-                String name = course.getName();
-                float textPadding = 6;
-                float availableWidth = right - left - textPadding * 2;
-
-                String ellipsized = name;
-                float textWidth = blockTextPaint.measureText(name);
-                if (textWidth > availableWidth) {
-                    while (ellipsized.length() > 0 &&
-                            blockTextPaint.measureText(ellipsized + "...") > availableWidth) {
-                        ellipsized = ellipsized.substring(0, ellipsized.length() - 1);
-                    }
-                    ellipsized = ellipsized + "...";
-                }
-
-                float textX = left + textPadding;
-                float textY = top + textSize + textPadding;
-                canvas.drawText(ellipsized, textX, textY, blockTextPaint);
+            // 화면 위/아래를 벗어나면 적당히 클램핑 하거나 continue
+            if (minutesToEnd <= 0 || minutesFromStart >= (visibleEndHour - visibleStartHour) * 60) {
+                continue;
             }
+
+            float top = contentTop + (minutesFromStart / 60f) * rowHeight;
+            float bottom = contentTop + (minutesToEnd / 60f) * rowHeight;
+
+            float left = contentLeft + columnWidth * dayIndex + 4;           // 왼쪽 여백 조금
+            float right = contentLeft + columnWidth * (dayIndex + 1) - 4;    // 오른쪽 여백 조금
+
+            // 3) 실제 그리는 사각형 (RoundRect로 그리는 예제)
+            RectF blockRectF = new RectF(left, top, right, bottom);
+
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.parseColor("#FFCC80")); // 실제로는 course 색 사용
+
+            canvas.drawRoundRect(blockRectF, 16f, 16f, p);
+
+            // 4) 터치 판정을 위한 Rect (int로 변환)
+            Rect clickRect = new Rect(
+                    (int) left,
+                    (int) top,
+                    (int) right,
+                    (int) bottom
+            );
+
+            slotRects.add(clickRect);
+            slotRectsSlots.add(slot);
         }
     }
+
 
     // 과목 색상 파싱 (colorHex가 없으면 기본 색)
     private int parseCourseColor(@Nullable Course course) {
@@ -322,4 +341,26 @@ public class TimetableView extends View {
             return 0xFF4CAF50;
         }
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_UP) {
+            float x = event.getX();
+            float y = event.getY();
+
+            // 마지막에 그린 게 위에 있으니까 역순으로 탐색해도 됨
+            for (int i = slotRects.size() - 1; i >= 0; i--) {
+                Rect r = slotRects.get(i);
+                if (r.contains((int) x, (int) y)) {
+                    if (onSlotClickListener != null) {
+                        ClassSlot slot = slotRectsSlots.get(i);
+                        onSlotClickListener.onSlotClick(slot);
+                    }
+                    return true;
+                }
+            }
+        }
+        return true; // 터치 이벤트는 소비함
+    }
+
 }
