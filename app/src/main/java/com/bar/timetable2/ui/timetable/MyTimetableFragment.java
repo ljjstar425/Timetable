@@ -47,7 +47,7 @@ public class MyTimetableFragment extends Fragment {
 
         timetableView = view.findViewById(R.id.timetableView);
 
-        viewModel = new ViewModelProvider(this).get(TimetableViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(TimetableViewModel.class);
 
         // LiveData observe: 바뀔 때마다 TimetableView에 전달
         viewModel.getTimetableState().observe(

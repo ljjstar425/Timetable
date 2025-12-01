@@ -1,5 +1,6 @@
 package com.bar.timetable2.ui.timetable;
 
+import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 
@@ -9,6 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,9 +25,11 @@ import android.widget.Toast;
 import com.bar.timetable2.R;
 import com.bar.timetable2.data.model.ClassSlot;
 import com.bar.timetable2.data.model.Course;
+import com.bar.timetable2.data.model.TimetableState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class AddClassFragment extends Fragment {
@@ -134,8 +138,8 @@ public class AddClassFragment extends Fragment {
             List<ClassSlot> slots = new ArrayList<>();
             slots.add(slot);
 
-            // ViewModel 통해 Firestore에 저장
-            viewModel.addClass(course, slots);
+            // 🔥 여기서 바로 저장하지 말고, 먼저 겹침 검사
+            checkConflictsAndSave(course, slots);
         });
     }
 
@@ -198,4 +202,83 @@ public class AddClassFragment extends Fragment {
         int b = 150 + rnd.nextInt(100);
         return String.format("#%02X%02X%02X", r, g, b);
     }
+
+    // 겹치는 수업 있으면 경고 메시지 다이얼로그 알림
+    private void checkConflictsAndSave(Course newCourse, List<ClassSlot> newSlots) {
+        TimetableState state = viewModel.getCurrentTimetableState();
+
+        // 확인용
+        int existingSize = (state != null && state.getSlots() != null)
+                ? state.getSlots().size() : 0;
+
+        // 기존 시간표가 아예 없으면 그냥 저장
+        if (existingSize == 0) {
+            viewModel.addClass(newCourse, newSlots);
+            return;
+        }
+
+        List<ClassSlot> existingSlots = state.getSlots();
+        Map<String, Course> courseMap = state.getCourseMap(); // getCourses() 라면 거기에 맞춰 수정
+
+        List<String> conflictCourseNames = new ArrayList<>();
+
+        for (ClassSlot newSlot : newSlots) {
+            if (newSlot == null) continue;
+
+            for (ClassSlot exist : existingSlots) {
+                if (exist == null) continue;
+
+                // 1) 요일 다르면 겹칠 수 없음
+                if (newSlot.getDayOfWeek() != exist.getDayOfWeek()) continue;
+
+                int newStart = newSlot.getStartMin();
+                int newEnd   = newSlot.getEndMin();
+                int exStart  = exist.getStartMin();
+                int exEnd    = exist.getEndMin();
+
+                // 2-1에서 말한 규칙 적용:
+                // 끝 시간 == 다른 수업 시작 시간은 겹치지 않는 걸로 본다.
+                // => 겹치지 않는 조건: newEnd <= exStart || exEnd <= newStart
+                boolean notOverlap = (newEnd <= exStart) || (exEnd <= newStart);
+                if (notOverlap) continue;
+
+                // 여기까지 왔으면 겹치는 것
+                String cid = exist.getCourseId();
+                String cname = "(알 수 없음)";
+                if (courseMap != null && cid != null && courseMap.get(cid) != null) {
+                    cname = courseMap.get(cid).getName();
+                }
+
+                if (!conflictCourseNames.contains(cname)) {
+                    conflictCourseNames.add(cname);
+                }
+            }
+        }
+
+        if (!conflictCourseNames.isEmpty()) {
+            // 겹치는 과목이 하나 이상 있으면 다이얼로그로 알리고 저장 안 함
+            showConflictDialog(conflictCourseNames);
+        } else {
+            // 겹치는 수업이 없으면 저장 진행
+            viewModel.addClass(newCourse, newSlots);
+        }
+    }
+
+    private void showConflictDialog(List<String> conflictCourseNames) {
+        if (getContext() == null) return;
+
+        StringBuilder msg = new StringBuilder();
+        msg.append("다음 수업과 시간이 겹쳐요:\n\n");
+        for (String name : conflictCourseNames) {
+            msg.append("- ").append(name).append("\n");
+        }
+        msg.append("\n겹치는 수업이 있으면 추가할 수 없어요.");
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("수업 시간이 겹칩니다")
+                .setMessage(msg.toString())
+                .setPositiveButton("확인", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
 }

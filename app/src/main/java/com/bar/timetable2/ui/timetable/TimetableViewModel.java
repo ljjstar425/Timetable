@@ -28,6 +28,11 @@ public class TimetableViewModel extends ViewModel {
         return timetableStateLiveData;
     }
 
+    public TimetableState getCurrentTimetableState() {
+        return timetableStateLiveData.getValue();
+    }
+
+
     /**
      * 내 시간표 listen 시작 (한 번만 부르면 됨)
      */
