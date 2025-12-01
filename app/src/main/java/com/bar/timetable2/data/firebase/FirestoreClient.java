@@ -36,4 +36,8 @@ public class FirestoreClient {
                 .document(uid)
                 .collection(SUB_SLOTS);
     }
+
+    public FirebaseFirestore getDb() {
+        return db;
+    }
 }

@@ -4,8 +4,11 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -13,8 +16,10 @@ import com.bar.timetable2.data.firebase.FirestoreClient;
 import com.bar.timetable2.data.model.ClassSlot;
 import com.bar.timetable2.data.model.Course;
 import com.bar.timetable2.data.model.TimetableState;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +36,61 @@ public class TimetableRepository {
         void onChanged(TimetableState state);
         void onError(Exception e);
     }
+
+    // 수업 추가용 콜백
+    public interface AddClassCallback {
+        void onSuccess();
+        void onError(Exception e);
+    }
+
+    // 과목 + 슬롯 저장
+    public void addClass(Course course,
+                         List<ClassSlot> slots,
+                         AddClassCallback callback) {
+
+        // 1) 새 course 문서 레퍼런스 만들기 (자동 ID)
+        FirebaseFirestore db = client.getDb();
+        DocumentReference courseRef = client.getMyCoursesCollection().document();
+        String courseId = courseRef.getId();
+
+        // 2) course 객체에 id & createdAt 세팅 (필요 없다면 생략해도 됨)
+        course.setId(courseId);
+        try {
+            // Course 모델에 createdAt 필드가 있다면:
+            // private Timestamp createdAt;
+            course.setCreatedAt(new Timestamp(new Date()));
+        } catch (Exception e) {
+            // createdAt 없으면 setCreatedAt 부분은 그냥 빼도 됨
+        }
+
+        // 3) batch 시작
+        WriteBatch batch = db.batch();
+
+        // 3-1) course 문서 쓰기
+        batch.set(courseRef, course);
+
+        // 3-2) slots 문서들 쓰기
+        for (ClassSlot slot : slots) {
+            if (slot == null) continue;
+
+            slot.setCourseId(courseId);
+
+            DocumentReference slotRef = client.getMySlotsCollection().document();
+            slot.setId(slotRef.getId());
+
+            batch.set(slotRef, slot);
+        }
+
+        // 4) 커밋
+        batch.commit()
+                .addOnSuccessListener(unused -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError(e);
+                });
+    }
+
 
     /**
      * 내 시간표(Courses + Slots)를 실시간으로 듣기

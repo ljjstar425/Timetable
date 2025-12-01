@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- 상단 바: 뒤로가기 + 제목 -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_media_previous"
+        android:contentDescription="뒤로가기"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/tvTitleAddClass"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="수업 추가"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        app:layout_constraintTop_toTopOf="@id/btnBack"
+        app:layout_constraintBottom_toBottomOf="@id/btnBack"
+        android:layout_marginStart="8dp" />
+
+    <!-- 과목명 -->
+    <TextView
+        android:id="@+id/tvLabelName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="과목명"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/btnBack"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="24dp" />
+
+    <EditText
+        android:id="@+id/etCourseName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="예: 자료구조"
+        android:inputType="text"
+        app:layout_constraintTop_toBottomOf="@id/tvLabelName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- 강의실 (선택) -->
+    <TextView
+        android:id="@+id/tvLabelLocation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="강의실 (선택)"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/etCourseName"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <EditText
+        android:id="@+id/etLocation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="예: 공학관 101"
+        android:inputType="text"
+        app:layout_constraintTop_toBottomOf="@id/tvLabelLocation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- 요일 -->
+    <TextView
+        android:id="@+id/tvLabelDay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="요일"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/etLocation"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/spinnerDayOfWeek"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/tvLabelDay"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- 시작 시간 -->
+    <TextView
+        android:id="@+id/tvLabelStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="시작 시간"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/spinnerDayOfWeek"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/tvStartTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@android:drawable/edit_text"
+        android:padding="8dp"
+        android:text="시간 선택"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/tvLabelStart"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- 끝 시간 -->
+    <TextView
+        android:id="@+id/tvLabelEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="끝 시간"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/tvStartTime"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/tvEndTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@android:drawable/edit_text"
+        android:padding="8dp"
+        android:text="시간 선택"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/tvLabelEnd"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- 저장 버튼 -->
+    <Button
+        android:id="@+id/btnSaveClass"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="저장"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

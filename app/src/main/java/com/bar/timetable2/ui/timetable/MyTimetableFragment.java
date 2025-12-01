@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -56,6 +57,19 @@ public class MyTimetableFragment extends Fragment {
 
         // 🔥 Firestore
         viewModel.startListenMyTimetable();
+
+        // + 아이콘 클릭 -> AddClass 화면으로 이동
+        ImageButton btnAdd = view.findViewById(R.id.btnAddClass);
+        if (btnAdd != null) {
+            btnAdd.setOnClickListener(v -> {
+                requireActivity()
+                        .getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragmentContainer, new AddClassFragment())
+                        .addToBackStack(null)
+                        .commit();
+            });
+        }
     }
 
     private void onTimetableStateChanged(@Nullable TimetableState state) {
