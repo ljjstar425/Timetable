@@ -16,6 +16,7 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class FriendRepository {
 
     private static FriendRepository instance;
     private final FirestoreClient client;
+    private UserManager userManager;
 
     private FriendRepository() {
         client = new FirestoreClient();
@@ -33,13 +35,24 @@ public class FriendRepository {
 
     public static FriendRepository getInstance() {
         if (instance == null) {
-            instance = new FriendRepository();
+            instance = new FriendRepository(
+                    FirestoreClient.getInstance(),
+                    UserManager.getInstance()
+            );
         }
         return instance;
     }
 
+    // 🔥 외부에서 new FriendRepository() 못 쓰게 private
+    private FriendRepository(FirestoreClient client, UserManager userManager) {
+        this.client = client;
+        this.userManager = userManager;
+    }
+
+    // 내 ID 가져오는 헬퍼
     private String getMyId() {
-        return UserManager.getInstance().getCurrentUserId();
+        String id = userManager.getCurrentUserId();
+        return id != null ? id : "";
     }
 
     // ===== 콜백 인터페이스 =====
@@ -224,26 +237,32 @@ public class FriendRepository {
     // ===== 6) 친구 삭제 (한쪽만 해도 서로 목록에서 제거) =====
     public void removeFriend(String friendId, SimpleCallback callback) {
         String myId = getMyId();
+        if (myId == null || myId.isEmpty()) {
+            if (callback != null) callback.onError("내 ID가 없습니다.");
+            return;
+        }
 
-        DocumentReference myFriendDoc = client.getUsersCollection()
-                .document(myId)
-                .collection("friends")
+        // 나 ↔ 친구 양쪽 friends 문서 삭제
+        WriteBatch batch = client.getDb().batch();
+
+        DocumentReference mySide = client.getFriendsCollectionOf(myId)
                 .document(friendId);
-
-        DocumentReference otherFriendDoc = client.getUsersCollection()
-                .document(friendId)
-                .collection("friends")
+        DocumentReference friendSide = client.getFriendsCollectionOf(friendId)
                 .document(myId);
 
-        myFriendDoc.delete().continueWithTask(task -> {
-            if (!task.isSuccessful()) throw task.getException();
-            return otherFriendDoc.delete();
-        }).addOnCompleteListener(t -> {
-            if (t.isSuccessful()) {
+        batch.delete(mySide);
+        batch.delete(friendSide);
+
+        batch.commit().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
                 if (callback != null) callback.onSuccess();
             } else {
-                if (callback != null) callback.onError("친구 삭제 실패: " + t.getException());
+                Exception e = task.getException();
+                if (callback != null) {
+                    callback.onError(e != null ? e.getMessage() : "삭제 실패");
+                }
             }
         });
     }
+
 }
