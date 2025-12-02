@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
@@ -43,6 +44,11 @@ public class AddClassFragment extends Fragment {
     private TextView tvEndTime;
     private Button btnSave;
     private ImageButton btnBack;
+    private List<ClassSlot> addedSlots = new ArrayList<>();
+
+    private LinearLayout layoutAddedSlots;
+    private Button btnAddTimeSlot;
+
 
     private int startMin = -1; // 분 단위 (0~1440)
     private int endMin = -1;
@@ -67,6 +73,8 @@ public class AddClassFragment extends Fragment {
         tvEndTime = view.findViewById(R.id.tvEndTime);
         btnSave = view.findViewById(R.id.btnSaveClass);
         btnBack = view.findViewById(R.id.btnBack);
+        layoutAddedSlots = view.findViewById(R.id.layoutAddedSlots);
+        btnAddTimeSlot = view.findViewById(R.id.btnAddTimeSlot);
 
         setupDayOfWeekSpinner();
         setupTimePickers();
@@ -105,42 +113,22 @@ public class AddClassFragment extends Fragment {
                 Toast.makeText(getContext(), "과목명을 입력해 주세요.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (spinnerDayOfWeek.getSelectedItemPosition() == 0) {
-                Toast.makeText(getContext(), "요일을 선택해 주세요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (startMin < 0 || endMin < 0) {
-                Toast.makeText(getContext(), "시작/끝 시간을 선택해 주세요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (endMin <= startMin) {
-                Toast.makeText(getContext(), "끝 시간은 시작 시간보다 늦어야 해요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
 
-            int dayOfWeek = mapSpinnerIndexToDayOfWeek(
-                    spinnerDayOfWeek.getSelectedItemPosition()
-            );
+            if (addedSlots.isEmpty()) {
+                Toast.makeText(getContext(), "요일/시간을 하나 이상 추가해 주세요.", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             // Course 객체 구성
             Course course = new Course();
             course.setName(name);
-            // location, professor 등은 Course 모델에 있으면 세터 호출:
-            // course.setLocation(location);
+            // location 쓰려면 Course에 필드 추가해서 setLocation 호출
             course.setColorHex(generateRandomColorHex());
 
-            // Slot 하나만 (다음 단계에서 여러 개로 확장)
-            ClassSlot slot = new ClassSlot();
-            slot.setDayOfWeek(dayOfWeek);
-            slot.setStartMin(startMin);
-            slot.setEndMin(endMin);
-
-            List<ClassSlot> slots = new ArrayList<>();
-            slots.add(slot);
-
-            // 🔥 여기서 바로 저장하지 말고, 먼저 겹침 검사
-            checkConflictsAndSave(course, slots);
+            // 🔥 여러 슬롯을 한 번에 저장
+            checkConflictsAndSave(course, new ArrayList<>(addedSlots));
         });
+
     }
 
     private void setupDayOfWeekSpinner() {
@@ -162,6 +150,11 @@ public class AddClassFragment extends Fragment {
         tvEndTime.setOnClickListener(v ->
                 showTimePicker(false)
         );
+        btnAddTimeSlot.setOnClickListener(v -> {
+            // 현재 선택된 요일/시간으로 Slot 하나 생성해서 리스트에 추가
+            addCurrentTimeAsSlot();
+        });
+
     }
 
     private void showTimePicker(boolean isStart) {
@@ -279,6 +272,74 @@ public class AddClassFragment extends Fragment {
                 .setMessage(msg.toString())
                 .setPositiveButton("확인", (dialog, which) -> dialog.dismiss())
                 .show();
+    }
+
+    private void addCurrentTimeAsSlot() {
+        // 1) 기본 검증
+        if (spinnerDayOfWeek.getSelectedItemPosition() == 0) {
+            Toast.makeText(getContext(), "요일을 선택해 주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (startMin < 0 || endMin < 0) {
+            Toast.makeText(getContext(), "시작/끝 시간을 선택해 주세요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (endMin <= startMin) {
+            Toast.makeText(getContext(), "끝 시간은 시작 시간보다 늦어야 해요.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int dayOfWeek = mapSpinnerIndexToDayOfWeek(
+                spinnerDayOfWeek.getSelectedItemPosition()
+        );
+
+        // 2) 슬롯 하나 생성
+        ClassSlot slot = new ClassSlot();
+        slot.setDayOfWeek(dayOfWeek);
+        slot.setStartMin(startMin);
+        slot.setEndMin(endMin);
+
+        addedSlots.add(slot);
+
+        // 3) 화면에 텍스트로 추가
+        addSlotViewToLayout(slot);
+
+        Toast.makeText(getContext(), "시간이 추가되었습니다.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void addSlotViewToLayout(ClassSlot slot) {
+        if (getContext() == null) return;
+
+        TextView tv = new TextView(getContext());
+        String dayText = dayOfWeekToText(slot.getDayOfWeek());
+        String timeText = String.format("%s %s ~ %s",
+                dayText,
+                minutesToTime(slot.getStartMin()),
+                minutesToTime(slot.getEndMin()));
+        tv.setText(timeText);
+        tv.setPadding(8, 4, 8, 4);
+
+        layoutAddedSlots.addView(tv);
+    }
+
+    // 요일 텍스트 (MyTimetableFragment랑 겹치면 static 유틸로 빼도 OK)
+    private String dayOfWeekToText(int day) {
+        switch (day) {
+            case 1: return "월";
+            case 2: return "화";
+            case 3: return "수";
+            case 4: return "목";
+            case 5: return "금";
+            case 6: return "토";
+            case 7: return "일";
+            default: return "";
+        }
+    }
+
+    private String minutesToTime(int min) {
+        int h = min / 60;
+        int m = min % 60;
+        return String.format("%02d:%02d", h, m);
     }
 
 }

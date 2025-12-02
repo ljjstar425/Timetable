@@ -279,6 +279,8 @@ public class TimetableView extends View {
         if (timetableState == null || timetableState.getSlots() == null) return;
 
         List<ClassSlot> slots = timetableState.getSlots();
+        // 과목 정보 맵 (courseId -> Course)
+        Map<String, Course> courseMap = timetableState.getCourseMap(); // 메서드 이름 다르면 수정
 
         for (ClassSlot slot : slots) {
             if (slot == null) continue;
@@ -287,36 +289,64 @@ public class TimetableView extends View {
             int startMin = slot.getStartMin();     // 분 단위
             int endMin   = slot.getEndMin();
 
-            // 1) 이 요일이 activeDays에 있는지 확인 (월~금만 쓰는 경우 등)
+            // 1) 이 요일이 activeDays에 있는지 확인
             int dayIndex = activeDays.indexOf(dayOfWeek);
-            if (dayIndex < 0) continue; // 이 요일은 안 그리는 요일이면 건너뜀
+            if (dayIndex < 0) continue;
 
-            // 2) 시간 범위가 현재 보이는 범위(visibleStartHour~visibleEndHour)에 들어오는지
-            float totalMinutesPerHour = 60f;
+            // 2) 시간 범위 계산
             float minutesFromStart = (startMin - visibleStartHour * 60);
             float minutesToEnd     = (endMin - visibleStartHour * 60);
 
-            // 화면 위/아래를 벗어나면 적당히 클램핑 하거나 continue
-            if (minutesToEnd <= 0 || minutesFromStart >= (visibleEndHour - visibleStartHour) * 60) {
+            // 화면 위/아래를 벗어나면 스킵
+            if (minutesToEnd <= 0 ||
+                    minutesFromStart >= (visibleEndHour - visibleStartHour) * 60) {
                 continue;
             }
 
             float top = contentTop + (minutesFromStart / 60f) * rowHeight;
             float bottom = contentTop + (minutesToEnd / 60f) * rowHeight;
 
-            float left = contentLeft + columnWidth * dayIndex + 4;           // 왼쪽 여백 조금
-            float right = contentLeft + columnWidth * (dayIndex + 1) - 4;    // 오른쪽 여백 조금
+            float left = contentLeft + columnWidth * dayIndex + 4;
+            float right = contentLeft + columnWidth * (dayIndex + 1) - 4;
 
-            // 3) 실제 그리는 사각형 (RoundRect로 그리는 예제)
             RectF blockRectF = new RectF(left, top, right, bottom);
 
-            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.parseColor("#FFCC80")); // 실제로는 course 색 사용
+            // 과목 찾기 & 색상 설정
+            Course course = null;
+            if (courseMap != null && slot.getCourseId() != null) {
+                course = courseMap.get(slot.getCourseId());
+            }
+            int color = parseCourseColor(course);
+            blockPaint.setColor(color);
 
-            canvas.drawRoundRect(blockRectF, 16f, 16f, p);
+            // 블록 그리기
+            canvas.drawRoundRect(blockRectF, 16f, 16f, blockPaint);
 
-            // 4) 터치 판정을 위한 Rect (int로 변환)
+            // 과목 이름 텍스트 그리기
+            if (course != null && !TextUtils.isEmpty(course.getName())) {
+                String title = course.getName();
+
+                // 블록 안쪽 여백
+                float padding = 8f;
+                float textX = left + padding;
+                float textY = top + textSize + padding;
+
+                // 너무 길면 대충 한 줄만 잘라 쓰기 (심플 버전)
+                float maxWidth = right - left - 2 * padding;
+                String drawText = title;
+                float width = blockTextPaint.measureText(title);
+                if (width > maxWidth) {
+                    // 아주 간단하게, 글자 수 기준으로 자르기
+                    int len = (int) (title.length() * (maxWidth / width));
+                    if (len > 0 && len < title.length()) {
+                        drawText = title.substring(0, len - 1) + "…";
+                    }
+                }
+
+                canvas.drawText(drawText, textX, textY, blockTextPaint);
+            }
+
+            // 터치 판정용 Rect 저장
             Rect clickRect = new Rect(
                     (int) left,
                     (int) top,
@@ -328,6 +358,7 @@ public class TimetableView extends View {
             slotRectsSlots.add(slot);
         }
     }
+
 
 
     // 과목 색상 파싱 (colorHex가 없으면 기본 색)
