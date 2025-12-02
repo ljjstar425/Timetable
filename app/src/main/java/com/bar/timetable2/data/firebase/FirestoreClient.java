@@ -1,7 +1,9 @@
 package com.bar.timetable2.data.firebase;
 
+import com.bar.timetable2.data.user.UserManager;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class FirestoreClient {
@@ -39,5 +41,34 @@ public class FirestoreClient {
 
     public FirebaseFirestore getDb() {
         return db;
+    }
+
+    // ===== users 컬렉션 =====
+    public CollectionReference getUsersCollection() {
+        return db.collection("users");
+    }
+
+    public DocumentReference getUserDoc(String userId) {
+        return getUsersCollection().document(userId);
+    }
+
+    // ===== 내 friends 서브컬렉션 =====
+    public CollectionReference getMyFriendsCollection() {
+        String myId = UserManager.getInstance().getCurrentUserId();
+        return getUsersCollection()
+                .document(myId)
+                .collection("friends");
+    }
+
+    // 특정 유저의 friends (친구 시간표 볼 때 사용)
+    public CollectionReference getFriendsCollectionOf(String userId) {
+        return getUsersCollection()
+                .document(userId)
+                .collection("friends");
+    }
+
+    // ===== friend_requests 글로벌 컬렉션 =====
+    public CollectionReference getFriendRequestsCollection() {
+        return db.collection("friend_requests");
     }
 }

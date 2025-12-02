@@ -19,6 +19,7 @@ import com.bar.timetable2.R;
 import com.bar.timetable2.data.model.ClassSlot;
 import com.bar.timetable2.data.model.Course;
 import com.bar.timetable2.data.model.TimetableState;
+import com.bar.timetable2.ui.friend.FriendListBottomSheet;
 import com.bar.timetable2.ui.timetable.view.TimetableView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import androidx.appcompat.app.AlertDialog;
@@ -94,6 +95,14 @@ public class MyTimetableFragment extends Fragment {
                     }
                 }
         );
+
+        // 친구 추가 요청
+        ImageButton btnFriends = view.findViewById(R.id.btnFriends);
+        btnFriends.setOnClickListener(v -> {
+            FriendListBottomSheet sheet = new FriendListBottomSheet();
+            sheet.show(getParentFragmentManager(), "FriendListBottomSheet");
+        });
+
 
 
         // 🔥 Firestore

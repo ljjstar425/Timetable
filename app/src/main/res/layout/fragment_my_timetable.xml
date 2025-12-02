@@ -29,6 +29,15 @@
             android:textStyle="bold"
             android:layout_weight="1"/>
 
+        <ImageButton
+            android:id="@+id/btnFriends"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_myplaces"
+            android:background="@android:color/transparent"
+            android:contentDescription="친구 목록" />
+
+
         <!-- 수업 추가 + 아이콘 -->
         <ImageButton
             android:id="@+id/btnAddClass"
