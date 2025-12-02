@@ -7,6 +7,14 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class FirestoreClient {
+    private static FirestoreClient instance;
+
+    public static FirestoreClient getInstance() {
+        if (instance == null) {
+            instance = new FirestoreClient();
+        }
+        return instance;
+    }
 
     private static final String COLLECTION_USERS = "users";
     private static final String SUB_COURSES = "courses";
@@ -15,6 +23,7 @@ public class FirestoreClient {
     private final FirebaseFirestore db;
 
     public FirestoreClient() {
+
         db = FirebaseFirestore.getInstance();
     }
 
@@ -31,6 +40,19 @@ public class FirestoreClient {
                 .document(uid)
                 .collection(SUB_COURSES);
     }
+
+    public CollectionReference getSlotsCollectionOf(String userId) {
+        return db.collection("users")
+                .document(userId)
+                .collection("slots");
+    }
+
+    public CollectionReference getCoursesCollectionOf(String userId) {
+        return db.collection("users")
+                .document(userId)
+                .collection("courses");
+    }
+
 
     public CollectionReference getMySlotsCollection() {
         String uid = getCurrentUid();

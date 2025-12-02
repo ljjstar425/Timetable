@@ -16,7 +16,7 @@ import java.util.List;
 
 public class TimetableViewModel extends ViewModel {
 
-    private final TimetableRepository repository = new TimetableRepository();
+    private final TimetableRepository repository = TimetableRepository.getInstance();
 
     private final MutableLiveData<TimetableState> timetableStateLiveData =
             new MutableLiveData<>();

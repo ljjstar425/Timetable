@@ -4,7 +4,9 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.bar.timetable2.data.user.UserManager;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -19,6 +21,7 @@ import com.bar.timetable2.data.model.TimetableState;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -26,10 +29,23 @@ import java.util.Map;
 
 public class TimetableRepository {
 
-    private final FirestoreClient client;
+    private static TimetableRepository instance;
 
-    public TimetableRepository() {
-        client = new FirestoreClient();
+    public static TimetableRepository getInstance() {
+        if (instance == null) {
+            instance = new TimetableRepository(
+                    FirestoreClient.getInstance(),
+                    UserManager.getInstance()
+            );
+        }
+        return instance;
+    }
+    private final FirestoreClient client;
+    private final UserManager userManager;
+
+    public TimetableRepository(FirestoreClient client, UserManager userManager) {
+        this.client = client;
+        this.userManager = userManager;
     }
 
     public interface TimetableStateListener {
@@ -129,6 +145,62 @@ public class TimetableRepository {
 
         return reg;
     }
+
+    public ListenerRegistration listenTimetableOf(String userId,
+                                                  TimetableStateListener listener) {
+        // 친구의 slots / courses 컬렉션
+        CollectionReference slotsRef = client.getSlotsCollectionOf(userId);
+        CollectionReference coursesRef = client.getCoursesCollectionOf(userId);
+
+        // 먼저 courses를 싹 읽고 -> slots snapshot 연결 (MyTimetable이랑 같은 구조)
+        return slotsRef.addSnapshotListener((slotSnap, e) -> {
+            if (e != null) {
+                if (listener != null) listener.onError(e);
+                return;
+            }
+            if (slotSnap == null) {
+                if (listener != null) listener.onChanged(
+                        new TimetableState(Collections.<String, Course>emptyMap(),
+                                Collections.<ClassSlot>emptyList())
+                );
+                return;
+            }
+
+            // courses 전체 읽기
+            coursesRef.get().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    if (listener != null) {
+                        Exception ex = task.getException();
+                        if (ex == null) {
+                            ex = new Exception("friend courses load fail");
+                        }
+                        listener.onError(ex);
+                    }
+                    return;
+                }
+
+                Map<String, Course> courseMap = new HashMap<>();
+                for (DocumentSnapshot cs : task.getResult().getDocuments()) {
+                    Course c = cs.toObject(Course.class);
+                    if (c != null) {
+                        courseMap.put(c.getId(), c);
+                    }
+                }
+
+                List<ClassSlot> slots = new ArrayList<>();
+                for (DocumentSnapshot ds : slotSnap.getDocuments()) {
+                    ClassSlot s = ds.toObject(ClassSlot.class);
+                    if (s != null) {
+                        slots.add(s);
+                    }
+                }
+
+                TimetableState state = new TimetableState(courseMap, slots);
+                if (listener != null) listener.onChanged(state);
+            });
+        });
+    }
+
 
     private void loadCoursesForSlots(List<ClassSlot> slots, TimetableStateListener listener) {
 

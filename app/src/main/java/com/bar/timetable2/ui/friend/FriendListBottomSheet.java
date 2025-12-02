@@ -52,12 +52,27 @@ public class FriendListBottomSheet extends BottomSheetDialogFragment {
 
         rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new FriendAdapter(friend -> {
-            // TODO: 여기서 친구 클릭 시 친구 시간표 보기로 이동하거나
-            //       콜백을 MyTimetableFragment 쪽으로 넘겨도 됨.
-            Toast.makeText(getContext(),
-                    "친구 클릭: " + friend.getFriendId(),
-                    Toast.LENGTH_SHORT).show();
+            // 1) 바텀시트 닫기
+            dismiss();
+
+            // 2) 친구 시간표 Fragment로 이동
+            if (getActivity() != null) {
+                FriendTimetableFragment fragment =
+                        FriendTimetableFragment.newInstance(
+                                friend.getFriendId(),
+                                friend.getDisplayName()
+                        );
+
+                getActivity().getSupportFragmentManager()
+                        .beginTransaction()
+                        // 🔥 여기 container id는 네 MainActivity에서 Fragment를 띄우는 id로 교체해야 함
+                        .replace(R.id.fragmentContainer, fragment)
+                        .addToBackStack(null)
+                        .commit();
+            }
         });
+
+
         rvFriends.setAdapter(adapter);
 
         // 친구 목록 실시간 listen

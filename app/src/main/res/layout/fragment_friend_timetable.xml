@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 상단 바: 뒤로가기 + 친구 이름 + 메뉴(점3개) -->
+    <ImageButton
+        android:id="@+id/btnBackFriend"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_media_previous"
+        android:contentDescription="뒤로가기"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_margin="16dp" />
+
+    <TextView
+        android:id="@+id/tvFriendTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="친구 시간표"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/btnBackFriend"
+        app:layout_constraintEnd_toStartOf="@id/btnMoreFriend"
+        app:layout_constraintTop_toTopOf="@id/btnBackFriend"
+        app:layout_constraintBottom_toBottomOf="@id/btnBackFriend"
+        android:gravity="center_vertical"
+        android:layout_marginStart="8dp" />
+
+    <ImageButton
+        android:id="@+id/btnMoreFriend"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_more"
+        android:contentDescription="더보기"
+        app:layout_constraintTop_toTopOf="@id/btnBackFriend"
+        app:layout_constraintBottom_toBottomOf="@id/btnBackFriend"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="16dp" />
+
+    <!-- 시간표 뷰 -->
+    <com.bar.timetable2.ui.timetable.view.TimetableView
+        android:id="@+id/timetableViewFriend"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/btnBackFriend"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
