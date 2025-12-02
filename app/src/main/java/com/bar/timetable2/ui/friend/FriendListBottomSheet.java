@@ -86,9 +86,8 @@ public class FriendListBottomSheet extends BottomSheetDialogFragment {
 
         // 친구 요청 목록 버튼 (지금은 임시 Toast)
         btnFriendRequests.setOnClickListener(v -> {
-            Toast.makeText(getContext(),
-                    "친구 요청 목록은 다음 단계에서 구현할게요!",
-                    Toast.LENGTH_SHORT).show();
+            FriendRequestListBottomSheet sheet = new FriendRequestListBottomSheet();
+            sheet.show(getParentFragmentManager(), "FriendRequestListBottomSheet");
         });
     }
 
