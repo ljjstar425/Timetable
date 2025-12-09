@@ -153,4 +153,9 @@ public class TimetableViewModel extends ViewModel {
             registration.remove();
         }
     }
+
+    // 수업 추가 한 뒤, LiveData 초기화
+    public void clearAddClassResult() {
+        addClassResult.setValue(null);
+    }
 }

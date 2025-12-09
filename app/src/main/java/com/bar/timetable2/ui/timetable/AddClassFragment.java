@@ -96,6 +96,8 @@ public class AddClassFragment extends Fragment {
                                 "추가 실패: " + result.errorMessage,
                                 Toast.LENGTH_SHORT).show();
                     }
+
+                    viewModel.clearAddClassResult();
                 }
         );
     }

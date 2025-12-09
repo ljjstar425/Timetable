@@ -191,6 +191,7 @@ public class TimetableView extends View {
             return;
         }
 
+        // 필요 시: 토, 일
         boolean hasSat = false;
         boolean hasSun = false;
 
@@ -227,6 +228,7 @@ public class TimetableView extends View {
         float columnWidth = (contentRight - contentLeft) / dayCount;
         float rowHeight = (contentBottom - contentTop) / hourCount;
 
+        // 기본 시간표 테이블 그리기
         // ===== 1) 요일 헤더 =====
         for (int i = 0; i < dayCount; i++) {
             int dayOfWeek = activeDays.get(i);
@@ -268,6 +270,7 @@ public class TimetableView extends View {
         }
     }
 
+    // 개별 과목 블록 그리기
     private void drawCourseBlocks(Canvas canvas,
                                   float contentLeft,
                                   float contentTop,

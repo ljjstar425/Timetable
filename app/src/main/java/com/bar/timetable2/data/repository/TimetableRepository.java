@@ -146,8 +146,10 @@ public class TimetableRepository {
         return reg;
     }
 
-    public ListenerRegistration listenTimetableOf(String userId,
-                                                  TimetableStateListener listener) {
+    public ListenerRegistration listenTimetableOf(
+            String userId,
+            TimetableStateListener listener
+    ) {
         // 친구의 slots / courses 컬렉션
         CollectionReference slotsRef = client.getSlotsCollectionOf(userId);
         CollectionReference coursesRef = client.getCoursesCollectionOf(userId);

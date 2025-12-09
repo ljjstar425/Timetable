@@ -20,6 +20,7 @@ import com.bar.timetable2.data.model.ClassSlot;
 import com.bar.timetable2.data.model.Course;
 import com.bar.timetable2.data.model.TimetableState;
 import com.bar.timetable2.ui.friend.FriendListBottomSheet;
+import com.bar.timetable2.ui.meeting.MeetingFragment;
 import com.bar.timetable2.ui.timetable.view.TimetableView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import androidx.appcompat.app.AlertDialog;
@@ -120,6 +121,18 @@ public class MyTimetableFragment extends Fragment {
                         .commit();
             });
         }
+
+        // 사람들 아이콘 클릭 -> Meeting 화면으로 이동
+        ImageButton btnMeeting = view.findViewById(R.id.btnMeeting);
+        btnMeeting.setOnClickListener(v -> {
+            MeetingFragment fragment = new MeetingFragment();
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
     }
 
     private void onTimetableStateChanged(@Nullable TimetableState state) {
