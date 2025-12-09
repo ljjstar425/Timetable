@@ -18,15 +18,24 @@ import androidx.lifecycle.ViewModelProvider;
 import com.bar.timetable2.R;
 import com.bar.timetable2.data.model.ClassSlot;
 import com.bar.timetable2.data.model.Course;
+import com.bar.timetable2.data.model.Friend;
 import com.bar.timetable2.data.model.TimetableState;
+import com.bar.timetable2.data.repository.FriendRepository;
+import com.bar.timetable2.ui.friend.AddFriendDialogFragment;
+import com.bar.timetable2.ui.friend.FriendAdapter;
 import com.bar.timetable2.ui.friend.FriendListBottomSheet;
+import com.bar.timetable2.ui.friend.FriendRequestListBottomSheet;
+import com.bar.timetable2.ui.friend.FriendTimetableFragment;
 import com.bar.timetable2.ui.meeting.MeetingFragment;
 import com.bar.timetable2.ui.timetable.view.TimetableView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import androidx.appcompat.app.AlertDialog;
+import com.google.firebase.firestore.ListenerRegistration;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +45,10 @@ public class MyTimetableFragment extends Fragment {
     private TimetableViewModel viewModel;
     private TimetableView timetableView;
     private TimetableState currentState;
+    private BottomSheetBehavior<View> friendBottomSheetBehavior;
+    private RecyclerView rvFriends;
+    private FriendAdapter friendAdapter;
+    private ListenerRegistration friendsListener;
 
     public MyTimetableFragment() {
         // 기본 생성자
@@ -55,6 +68,52 @@ public class MyTimetableFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         timetableView = view.findViewById(R.id.timetableView);
+
+        // 바텀시트 설정
+        View friendBottomSheet = view.findViewById(R.id.friendBottomSheet);
+        friendBottomSheetBehavior = BottomSheetBehavior.from(friendBottomSheet);
+        friendBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        friendBottomSheetBehavior.setPeekHeight(80); // 검색창이 보이는 높이
+        friendBottomSheetBehavior.setHideable(false);
+
+        // RecyclerView 설정
+        rvFriends = view.findViewById(R.id.rvFriends);
+        rvFriends.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // 친구 목록 어댑터 설정 (FriendAdapter는 별도로 구현 필요)
+        friendAdapter = new FriendAdapter(friend -> {
+            // 친구 클릭 시 친구 시간표 Fragment로 이동
+            FriendTimetableFragment fragment =
+                    FriendTimetableFragment.newInstance(
+                            friend.getFriendId(),
+                            friend.getDisplayName()
+                    );
+
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+        rvFriends.setAdapter(friendAdapter);
+
+        // 친구 목록 실시간 listen
+        friendsListener = FriendRepository.getInstance()
+                .listenFriends(new FriendRepository.FriendListListener() {
+                    @Override
+                    public void onChanged(List<Friend> friends) {
+                        friendAdapter.submitList(friends);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if (getContext() != null) {
+                            Toast.makeText(getContext(),
+                                    "친구 목록 불러오기 실패: " + message,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
 
         timetableView.setOnSlotClickListener(slot -> {
             Course course = null;
@@ -97,13 +156,19 @@ public class MyTimetableFragment extends Fragment {
                 }
         );
 
-        // 친구 추가 요청
-        ImageButton btnFriends = view.findViewById(R.id.btnFriends);
-        btnFriends.setOnClickListener(v -> {
-            FriendListBottomSheet sheet = new FriendListBottomSheet();
-            sheet.show(getParentFragmentManager(), "FriendListBottomSheet");
+        // 친구 추가 요청 버튼
+        ImageButton btnAddFriend = view.findViewById(R.id.btnAddFriend);
+        btnAddFriend.setOnClickListener(v -> {
+            AddFriendDialogFragment dialog = new AddFriendDialogFragment();
+            dialog.show(getParentFragmentManager(), "AddFriendDialog");
         });
 
+        // 친구 요청 목록 버튼
+        ImageButton btnFriendRequests = view.findViewById(R.id.btnFriendRequests);
+        btnFriendRequests.setOnClickListener(v -> {
+            FriendRequestListBottomSheet sheet = new FriendRequestListBottomSheet();
+            sheet.show(getParentFragmentManager(), "FriendRequestListBottomSheet");
+        });
 
 
         // 🔥 Firestore
@@ -168,7 +233,7 @@ public class MyTimetableFragment extends Fragment {
         // Course에 location 필드가 있다면 사용, 없으면 생략
         String loc = "";
         try {
-            // loc = course.getLocation();
+            loc = course.getLocation();
         } catch (Exception ignored) {}
         if (loc == null || loc.isEmpty()) loc = "(강의실 정보 없음)";
         tvLocation.setText(loc);

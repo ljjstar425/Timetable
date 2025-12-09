@@ -99,7 +99,7 @@ public class FriendListBottomSheet extends BottomSheetDialogFragment {
             dialog.show(getParentFragmentManager(), "AddFriendDialog");
         });
 
-        // 친구 요청 목록 버튼 (지금은 임시 Toast)
+        // 친구 요청 목록 버튼
         btnFriendRequests.setOnClickListener(v -> {
             FriendRequestListBottomSheet sheet = new FriendRequestListBottomSheet();
             sheet.show(getParentFragmentManager(), "FriendRequestListBottomSheet");
