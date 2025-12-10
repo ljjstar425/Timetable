@@ -6,7 +6,7 @@ public class UserManager {
 
     // 지금은 로그인 기능이 없으니까, 임시로 고정 아이디 사용
     // 나중에 FirebaseAuth 연동하면 여기만 바꾸면 됨.
-    private String currentUserId = "test-user-1";
+    private String currentUserId = "test-user-2";
 
     private UserManager() {}
 

@@ -245,7 +245,10 @@ public class TimetableView extends View {
         }
 
         if (hasSat) activeDays.add(6);
-        if (hasSun) activeDays.add(7);
+        if (hasSun) {
+            activeDays.add(6);
+            activeDays.add(7);
+        }
     }
 
     @Override

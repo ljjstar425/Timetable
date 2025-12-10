@@ -2,6 +2,7 @@ package com.bar.timetable2.ui.timetable;
 
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -124,13 +125,12 @@ public class AddClassFragment extends Fragment {
             // Course 객체 구성
             Course course = new Course();
             course.setName(name);
-            // location 쓰려면 Course에 필드 추가해서 setLocation 호출
+            course.setLocation(location);
             course.setColorHex(generateRandomColorHex());
 
             // 🔥 여러 슬롯을 한 번에 저장
             checkConflictsAndSave(course, new ArrayList<>(addedSlots));
         });
-
     }
 
     private void setupDayOfWeekSpinner() {
@@ -189,14 +189,25 @@ public class AddClassFragment extends Fragment {
         return index; // 1=월, 2=화, ..., 7=일
     }
 
+    // 브라이트 계열 톤 생성
     private String generateRandomColorHex() {
-        // 간단한 파스텔톤 랜덤 색 (과목마다 고정)
         Random rnd = new Random();
-        int r = 150 + rnd.nextInt(100);
-        int g = 150 + rnd.nextInt(100);
-        int b = 150 + rnd.nextInt(100);
-        return String.format("#%02X%02X%02X", r, g, b);
+
+        // 0~360도 사이에서 랜덤 색상
+        float h = rnd.nextInt(360);
+
+        // 채도: 0.6~1.0 사이 (적당히 쨍하게)
+        float s = 0.6f + rnd.nextFloat() * 0.4f;
+
+        // 명도: 0.85~1.0 사이 (매우 밝게)
+        float v = 0.85f + rnd.nextFloat() * 0.15f;
+
+        float[] hsv = new float[]{h, s, v};
+        int color = Color.HSVToColor(hsv);
+
+        return String.format("#%06X", (0xFFFFFF & color));
     }
+
 
     // 겹치는 수업 있으면 경고 메시지 다이얼로그 알림
     private void checkConflictsAndSave(Course newCourse, List<ClassSlot> newSlots) {
