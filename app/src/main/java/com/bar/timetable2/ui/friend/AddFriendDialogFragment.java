@@ -1,8 +1,10 @@
 package com.bar.timetable2.ui.friend;
 
 import android.app.Dialog;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -30,10 +32,10 @@ public class AddFriendDialogFragment extends DialogFragment {
         container.setPadding(padding, padding, padding, padding);
         container.addView(et);
 
-        return new AlertDialog.Builder(requireContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("친구 추가")
                 .setView(container)
-                .setPositiveButton("요청 보내기", (dialog, which) -> {
+                .setPositiveButton("요청 보내기", (d, which) -> {
                     String friendId = et.getText().toString().trim();
                     if (friendId.isEmpty()) {
                         Toast.makeText(getContext(),
@@ -63,9 +65,24 @@ public class AddFriendDialogFragment extends DialogFragment {
                                 }
                             });
                 })
-                .setNegativeButton("취소", (dialog, which) -> {
-                    dialog.dismiss();
+                .setNegativeButton("취소", (d, which) -> {
+                    d.dismiss();
                 })
                 .create();
+
+        // 다이얼로그가 표시된 후 버튼 색상 변경
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+            if (positiveButton != null) {
+                positiveButton.setTextColor(Color.parseColor("#3182F7"));
+            }
+            if (negativeButton != null) {
+                negativeButton.setTextColor(Color.parseColor("#3182F7"));
+            }
+        });
+
+        return dialog;
     }
 }

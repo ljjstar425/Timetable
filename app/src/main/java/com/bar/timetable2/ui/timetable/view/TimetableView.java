@@ -39,15 +39,19 @@ public class TimetableView extends View {
     // 화면 여백
     private float topHeaderHeight;
     private float leftTimeWidth;
-    private float textSize;
+    private float timeTextSize;
+    private float dayTextSize;
+    private float blockTextSize;
 
     // 페인트
-    private Paint linePaint;
-    private Paint textPaint;
+    private Paint gridLinePaint;
+    private Paint borderPaint;
+    private Paint timeTextPaint;
+    private Paint dayHeaderTextPaint;
     private Paint backgroundPaint;
     private Paint blockPaint;
     private Paint blockTextPaint;
-    private Paint freeTimePaint;   // 공강 오버레이용
+    private Paint freeTimePaint;
 
     // 뷰 크기
     private int viewWidth;
@@ -60,14 +64,14 @@ public class TimetableView extends View {
     private int visibleStartHour = DEFAULT_START_HOUR;
     private int visibleEndHour = DEFAULT_END_HOUR;
 
-    private List<Integer> activeDays = new ArrayList<>();  // 실제 표시할 요일들 (1~7)
+    private List<Integer> activeDays = new ArrayList<>();
 
     // ===== 공강 오버레이 블록 =====
     public static class FreeTimeBlock {
-        public int dayOfWeek;  // 1~7
-        public int startMin;   // 분 단위 (0~1440)
-        public int endMin;     // 분 단위
-        public float alpha;    // 0.0 ~ 1.0
+        public int dayOfWeek;
+        public int startMin;
+        public int endMin;
+        public float alpha;
     }
 
     private List<FreeTimeBlock> freeTimeBlocks = new ArrayList<>();
@@ -87,7 +91,6 @@ public class TimetableView extends View {
 
     private OnSlotClickListener onSlotClickListener;
 
-    // 외부에서 리스너 설정
     public void setOnSlotClickListener(OnSlotClickListener listener) {
         this.onSlotClickListener = listener;
     }
@@ -110,31 +113,55 @@ public class TimetableView extends View {
     // ====== 초기 설정 ======
     private void init() {
         float density = getResources().getDisplayMetrics().density;
-        topHeaderHeight = 32 * density;
-        leftTimeWidth = 44 * density;
-        textSize = 12 * density;
 
-        linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        linePaint.setColor(0xFFCCCCCC);
-        linePaint.setStrokeWidth(1 * density);
+        // 레이아웃 치수
+        topHeaderHeight = 36 * density;
+        leftTimeWidth = 36 * density;
 
-        textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(0xFF333333);
-        textPaint.setTextSize(textSize);
+        // 텍스트 크기
+        timeTextSize = 13 * density;
+        dayTextSize = 14 * density;
+        blockTextSize = 13 * density;
 
+        // 배경
         backgroundPaint = new Paint();
-        backgroundPaint.setColor(Color.WHITE);
+        backgroundPaint.setColor(0xFFFFFFFF);
 
+        // 그리드 라인 (매우 얇고 연한 회색)
+        gridLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        gridLinePaint.setColor(0xFF9E9E9E);
+        gridLinePaint.setStrokeWidth(0.5f * density);
+
+        // 시간표 테두리용 페인트 추가
+        borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borderPaint.setColor(0xFF9E9E9E);
+        borderPaint.setStrokeWidth(1.5f * density);
+        borderPaint.setStyle(Paint.Style.STROKE);
+
+        // 시간 텍스트
+        timeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        timeTextPaint.setColor(0xFF424242);
+        timeTextPaint.setTextSize(timeTextSize);
+
+        // 요일 헤더 텍스트
+        dayHeaderTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dayHeaderTextPaint.setColor(0xFF424242);
+        dayHeaderTextPaint.setTextSize(dayTextSize);
+        dayHeaderTextPaint.setFakeBoldText(true);
+
+        // 과목 블록
         blockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         blockPaint.setStyle(Paint.Style.FILL);
 
+        // 블록 내 텍스트
         blockTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         blockTextPaint.setColor(Color.WHITE);
-        blockTextPaint.setTextSize(textSize);
+        blockTextPaint.setTextSize(blockTextSize);
+        blockTextPaint.setFakeBoldText(true);
 
+        // 공강 오버레이
         freeTimePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         freeTimePaint.setStyle(Paint.Style.FILL);
-        // base color (초록 계열, 알파는 FreeTimeBlock에서 조절)
         freeTimePaint.setColor(0xFF4CAF50);
 
         // 기본 활성 요일: 월~금
@@ -180,18 +207,12 @@ public class TimetableView extends View {
             return;
         }
 
-        int defaultStartMin = DEFAULT_START_HOUR * MINUTES_PER_HOUR;
-        int defaultEndMin = DEFAULT_END_HOUR * MINUTES_PER_HOUR;
+        // 시작 시간: 기본값과 실제 슬롯 중 더 이른 시간
+        int startHour = Math.min(DEFAULT_START_HOUR, minStartMin / MINUTES_PER_HOUR);
 
-        int startMin = Math.min(defaultStartMin, minStartMin);
-        int endMin = Math.max(defaultEndMin, maxEndMin);
-
-        int startHour = startMin / MINUTES_PER_HOUR;
-        if (startMin % MINUTES_PER_HOUR != 0) {
-            startHour -= 1;
-        }
-
-        int endHour = (int) Math.ceil(endMin / (float) MINUTES_PER_HOUR);
+        // 끝 시간: 기본값과 실제 슬롯 중 더 늦은 시간
+        int endHour = (int) Math.ceil(maxEndMin / (float) MINUTES_PER_HOUR);
+        endHour = Math.max(DEFAULT_END_HOUR, endHour);
 
         visibleStartHour = startHour;
         visibleEndHour = endHour;
@@ -201,11 +222,10 @@ public class TimetableView extends View {
         }
     }
 
-    // 슬롯들을 보고 표시할 요일 목록 결정 (월~금 + 필요 시 토/일)
+    // 슬롯들을 보고 표시할 요일 목록 결정
     private void recomputeActiveDays() {
         activeDays.clear();
 
-        // 기본: 월~금
         for (int d = 1; d <= 5; d++) {
             activeDays.add(d);
         }
@@ -229,71 +249,115 @@ public class TimetableView extends View {
     }
 
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+
+        // 시간표 전체 높이 계산
+        float density = getResources().getDisplayMetrics().density;
+        float rowHeight = 60 * density;  // 한 시간당 높이
+
+        int hourCount = visibleEndHour - visibleStartHour;
+        if (hourCount <= 0) hourCount = 7; // 기본값
+
+        int totalHeight = (int) (topHeaderHeight + rowHeight * hourCount);
+
+        setMeasuredDimension(width, totalHeight);
+    }
+
+    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
         slotRects.clear();
         slotRectsSlots.clear();
 
+        // 배경
         canvas.drawRect(0, 0, viewWidth, viewHeight, backgroundPaint);
 
         float contentLeft = leftTimeWidth;
         float contentTop = topHeaderHeight;
         float contentRight = viewWidth;
-        float contentBottom = viewHeight;
 
         int dayCount = activeDays.isEmpty() ? 5 : activeDays.size();
         int hourCount = visibleEndHour - visibleStartHour;
 
         if (dayCount <= 0 || hourCount <= 0) return;
 
+        float density = getResources().getDisplayMetrics().density;
         float columnWidth = (contentRight - contentLeft) / dayCount;
-        float rowHeight = (contentBottom - contentTop) / hourCount;
+        float rowHeight = 60 * density;
 
-        // ===== 1) 요일 헤더 =====
+        float contentBottom = contentTop + rowHeight * hourCount;
+
+        // ===== 1) 요일 헤더 영역 그리드 =====
+        // 요일 헤더 아래쪽 가로선
+        canvas.drawLine(0, contentTop, contentRight, contentTop, gridLinePaint);
+
+        // 요일 헤더 영역의 세로선들 (왼쪽 시간 영역 포함)
+        canvas.drawLine(contentLeft, 0, contentLeft, contentTop, gridLinePaint);
+        for (int i = 0; i <= dayCount; i++) {
+            float x = contentLeft + columnWidth * i;
+            canvas.drawLine(x, 0, x, contentTop, gridLinePaint);
+        }
+
+        // 요일 텍스트
         for (int i = 0; i < dayCount; i++) {
             int dayOfWeek = activeDays.get(i);
             String dayLabel = (dayOfWeek >= 1 && dayOfWeek <= 7) ? DAY_LABELS[dayOfWeek] : "?";
 
             float colCenterX = contentLeft + columnWidth * i + columnWidth / 2f;
-            float textWidth = textPaint.measureText(dayLabel);
+            float textWidth = dayHeaderTextPaint.measureText(dayLabel);
             float x = colCenterX - textWidth / 2f;
-            float y = topHeaderHeight / 2f + (textSize / 2f);
-            canvas.drawText(dayLabel, x, y, textPaint);
+            float y = topHeaderHeight / 2f + (dayTextSize / 3f);
+            canvas.drawText(dayLabel, x, y, dayHeaderTextPaint);
         }
 
-        // ===== 2) 시간 라벨 + 가로줄 =====
+        // ===== 2) 시간표 영역 가로줄 =====
         for (int i = 0; i <= hourCount; i++) {
+            float y = contentTop + rowHeight * i;
+            canvas.drawLine(0, y, contentRight, y, gridLinePaint);
+        }
+
+        // ===== 3) 시간 라벨 (그리드 셀 상단에 배치) =====
+        for (int i = 0; i < hourCount; i++) {
             int hour = visibleStartHour + i;
             float y = contentTop + rowHeight * i;
 
-            canvas.drawLine(contentLeft, y, contentRight, y, linePaint);
+            // 시간 라벨을 셀의 상단에 배치
+            String timeLabel = hour + "";
+            float textWidth = timeTextPaint.measureText(timeLabel);
 
-            if (i < hourCount) {
-                String timeLabel = hour + ":00";
-                float textWidth = textPaint.measureText(timeLabel);
-                float textX = leftTimeWidth - textWidth - 4;
-                float textY = y + rowHeight / 2f + (textSize / 2f) - 4;
-                canvas.drawText(timeLabel, textX, textY, textPaint);
-            }
+            // 셀 상단에서 약간 아래로 (padding 추가)
+            float textX = (leftTimeWidth - textWidth) / 2f;
+            float textY = y + timeTextSize + 8;  // 상단에서 8dp 여백
+
+            canvas.drawText(timeLabel, textX, textY, timeTextPaint);
         }
 
-        // ===== 3) 세로줄 (요일 컬럼 경계) =====
+        // ===== 4) 시간표 영역 세로줄 =====
+        // 왼쪽 시간 영역 오른쪽 경계선
+        canvas.drawLine(contentLeft, 0, contentLeft, contentBottom, gridLinePaint);
+
+        // 요일 구분 세로선들
         for (int i = 0; i <= dayCount; i++) {
             float x = contentLeft + columnWidth * i;
-            canvas.drawLine(x, contentTop, x, contentBottom, linePaint);
+            canvas.drawLine(x, contentTop, x, contentBottom, gridLinePaint);
         }
 
-        // ===== 4) 공강 오버레이(모든 참여자) =====
+        // ===== 5) 공강 오버레이 =====
         if (freeTimeBlocks != null && !freeTimeBlocks.isEmpty()) {
             drawFreeTimeBlocks(canvas, contentLeft, contentTop, columnWidth, rowHeight);
         }
 
-        // ===== 5) 과목 블록 그리기 (내 수업) =====
+        // ===== 6) 과목 블록 =====
         if (timetableState != null && timetableState.getSlots() != null) {
             drawCourseBlocks(canvas, contentLeft, contentTop, contentRight, contentBottom,
                     columnWidth, rowHeight);
         }
+
+        // ===== 7) 시간표 전체 테두리 =====
+        RectF outerBorderRect = new RectF(0, 0, contentRight, contentBottom);
+        canvas.drawRect(outerBorderRect, borderPaint);
     }
 
     private void drawFreeTimeBlocks(Canvas canvas,
@@ -316,13 +380,11 @@ public class TimetableView extends View {
             float minutesFromStart = (startMin - visibleStartHour * 60);
             float minutesToEnd = (endMin - visibleStartHour * 60);
 
-            // 화면 범위 밖이면 스킵
             if (minutesToEnd <= 0 ||
                     minutesFromStart >= (visibleEndHour - visibleStartHour) * 60) {
                 continue;
             }
 
-            // 화면 안쪽으로 클램핑
             if (minutesFromStart < 0) minutesFromStart = 0;
             float maxMinutes = (visibleEndHour - visibleStartHour) * 60;
             if (minutesToEnd > maxMinutes) minutesToEnd = maxMinutes;
@@ -330,8 +392,8 @@ public class TimetableView extends View {
             float top = contentTop + (minutesFromStart / 60f) * rowHeight;
             float bottom = contentTop + (minutesToEnd / 60f) * rowHeight;
 
-            float left = contentLeft + columnWidth * dayIndex + 4;
-            float right = contentLeft + columnWidth * (dayIndex + 1) - 4;
+            float left = contentLeft + columnWidth * dayIndex + 2;
+            float right = contentLeft + columnWidth * (dayIndex + 1) - 2;
 
             RectF r = new RectF(left, top, right, bottom);
 
@@ -341,11 +403,10 @@ public class TimetableView extends View {
             int alphaInt = (int) (255 * a);
 
             freeTimePaint.setAlpha(alphaInt);
-            canvas.drawRect(r, freeTimePaint);
+            canvas.drawRoundRect(r, 8f, 8f, freeTimePaint);
         }
     }
 
-    // 개별 과목 블록 그리기
     private void drawCourseBlocks(Canvas canvas,
                                   float contentLeft,
                                   float contentTop,
@@ -362,8 +423,8 @@ public class TimetableView extends View {
         for (ClassSlot slot : slots) {
             if (slot == null) continue;
 
-            int dayOfWeek = slot.getDayOfWeek();   // 1~7 (월~일)
-            int startMin = slot.getStartMin();     // 분 단위
+            int dayOfWeek = slot.getDayOfWeek();
+            int startMin = slot.getStartMin();
             int endMin = slot.getEndMin();
 
             int dayIndex = activeDays.indexOf(dayOfWeek);
@@ -380,8 +441,9 @@ public class TimetableView extends View {
             float top = contentTop + (minutesFromStart / 60f) * rowHeight;
             float bottom = contentTop + (minutesToEnd / 60f) * rowHeight;
 
-            float left = contentLeft + columnWidth * dayIndex + 4;
-            float right = contentLeft + columnWidth * (dayIndex + 1) - 4;
+            // 여백을 최소화하여 블록이 셀을 거의 꽉 채우도록
+            float left = contentLeft + columnWidth * dayIndex + 2;
+            float right = contentLeft + columnWidth * (dayIndex + 1) - 2;
 
             RectF blockRectF = new RectF(left, top, right, bottom);
 
@@ -392,15 +454,16 @@ public class TimetableView extends View {
             int color = parseCourseColor(course);
             blockPaint.setColor(color);
 
-            canvas.drawRoundRect(blockRectF, 16f, 16f, blockPaint);
+            // 둥근 모서리
+            canvas.drawRoundRect(blockRectF, 8f, 8f, blockPaint);
 
             // 과목 이름 텍스트
             if (course != null && !TextUtils.isEmpty(course.getName())) {
                 String title = course.getName();
 
-                float padding = 8f;
+                float padding = 10f;
                 float textX = left + padding;
-                float textY = top + textSize + padding;
+                float textY = top + blockTextSize + padding;
 
                 float maxWidth = right - left - 2 * padding;
                 String drawText = title;
@@ -415,6 +478,8 @@ public class TimetableView extends View {
                 canvas.drawText(drawText, textX, textY, blockTextPaint);
             }
 
+            // 장소 텍스트
+
             Rect clickRect = new Rect(
                     (int) left,
                     (int) top,
@@ -427,10 +492,9 @@ public class TimetableView extends View {
         }
     }
 
-    // 과목 색상 파싱 (colorHex가 없으면 기본 색)
     private int parseCourseColor(@Nullable Course course) {
         if (course == null || TextUtils.isEmpty(course.getColorHex())) {
-            return 0xFF4CAF50; // 기본 초록색
+            return 0xFF4CAF50;
         }
         try {
             return Color.parseColor(course.getColorHex());

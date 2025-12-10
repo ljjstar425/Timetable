@@ -24,13 +24,17 @@
             android:id="@+id/btnReject"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="거절" />
+            android:text="거절"
+            android:textColor="@color/white"
+            android:backgroundTint="#3182F7"/>
 
         <Button
             android:id="@+id/btnAccept"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="수락"
-            android:layout_marginStart="8dp" />
+            android:textColor="@color/white"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="#3182F7"/>
     </LinearLayout>
 </LinearLayout>

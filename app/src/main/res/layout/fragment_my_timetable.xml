@@ -10,7 +10,8 @@
         android:id="@+id/contentContainer"
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/white">
 
         <!-- 상단 헤더: 제목 + + 아이콘 + 사람 아이콘 -->
         <LinearLayout
@@ -54,12 +55,26 @@
                 android:contentDescription="친구 목록" />
         </LinearLayout>
 
-        <!-- 시간표 커스텀 뷰 -->
-        <com.bar.timetable2.ui.timetable.view.TimetableView
-            android:id="@+id/timetableView"
+        <!-- ScrollView + 시간표 -->
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:fillViewport="false"
+            android:paddingBottom="100dp"
+            android:clipToPadding="false">
+
+            <!-- 시간표 커스텀 뷰 -->
+            <com.bar.timetable2.ui.timetable.view.TimetableView
+                android:id="@+id/timetableView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
+                android:layout_marginRight="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"/>
+
+        </ScrollView>
     </LinearLayout>
 
     <!-- Non-modal 바텀시트: 친구 목록 -->
@@ -72,7 +87,7 @@
         android:elevation="8dp"
         android:padding="16dp"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
-        app:behavior_peekHeight="60dp"
+        app:behavior_peekHeight="50dp"
         app:behavior_hideable="false">
 
         <!-- 바텀시트 핸들 -->
@@ -107,7 +122,7 @@
                 android:layout_height="32dp"
                 android:background="@android:color/transparent"
                 android:contentDescription="친구 요청 목록"
-                android:src="@android:drawable/ic_menu_info_details"
+                android:src="@drawable/ic_mail"
                 android:layout_marginEnd="4dp" />
 
             <!-- 친구 추가 버튼 -->
@@ -116,7 +131,7 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:background="@android:color/transparent"
-                android:src="@android:drawable/ic_input_add"
+                android:src="@drawable/ic_person_add"
                 android:contentDescription="친구 추가" />
         </LinearLayout>
 

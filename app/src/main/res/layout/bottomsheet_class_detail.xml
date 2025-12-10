@@ -32,12 +32,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="수업 삭제"
-        android:layout_marginTop="16dp" />
-
-    <Button
-        android:id="@+id/btnClose"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="닫기"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#3182F7"/>
 </LinearLayout>

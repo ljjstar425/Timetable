@@ -11,7 +11,7 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:background="@android:color/transparent"
-        android:src="@android:drawable/ic_media_previous"
+        android:src="@drawable/ic_arrow_back"
         android:contentDescription="뒤로가기"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -137,7 +137,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="이 요일/시간 추가"
-                android:layout_marginTop="12dp" />
+                android:layout_marginTop="12dp"
+                android:backgroundTint="#3182F7"/>
 
             <!-- 현재까지 추가된 요일/시간 목록 -->
             <TextView
@@ -164,6 +165,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="저장"
+        android:backgroundTint="#3182F7"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -217,7 +217,6 @@ public class MyTimetableFragment extends Fragment {
         TextView tvTime = sheet.findViewById(R.id.tvClassTime);
         TextView tvLocation = sheet.findViewById(R.id.tvClassLocation);
         Button btnDelete = sheet.findViewById(R.id.btnDeleteClass);
-        Button btnClose = sheet.findViewById(R.id.btnClose);
 
         String name = (course != null && course.getName() != null)
                 ? course.getName() : "(이름 없음)";
@@ -237,8 +236,6 @@ public class MyTimetableFragment extends Fragment {
         } catch (Exception ignored) {}
         if (loc == null || loc.isEmpty()) loc = "(강의실 정보 없음)";
         tvLocation.setText(loc);
-
-        btnClose.setOnClickListener(v -> dialog.dismiss());
 
         btnDelete.setOnClickListener(v -> {
             if (course == null || course.getId() == null) {

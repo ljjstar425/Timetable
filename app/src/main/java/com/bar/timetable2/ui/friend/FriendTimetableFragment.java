@@ -1,9 +1,11 @@
 package com.bar.timetable2.ui.friend;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,9 +65,9 @@ public class FriendTimetableFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         ImageButton btnBack = view.findViewById(R.id.btnBackFriend);
-        ImageButton btnMore = view.findViewById(R.id.btnMoreFriend);
-        TextView tvTitle = view.findViewById(R.id.tvFriendTitle);
-        timetableView = view.findViewById(R.id.timetableViewFriend);
+        ImageButton btnDeleteFriend = view.findViewById(R.id.btnDeleteFriend);
+        TextView tvTitle = view.findViewById(R.id.tvFriendName);
+        timetableView = view.findViewById(R.id.timetableView);
 
         // 제목: "OOO 시간표" 느낌
         if (friendName != null && !friendName.isEmpty()) {
@@ -82,11 +84,11 @@ public class FriendTimetableFragment extends Fragment {
         });
 
         // 점3개: 친구 삭제
-        btnMore.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
+        btnDeleteFriend.setOnClickListener(v -> {
+            AlertDialog dialog = new AlertDialog.Builder(requireContext())
                     .setTitle("친구 삭제")
                     .setMessage("이 친구를 삭제하시겠습니까?")
-                    .setPositiveButton("삭제", (dialog, which) -> {
+                    .setPositiveButton("삭제", (d, which) -> {
                         FriendRepository.getInstance()
                                 .removeFriend(friendId, new FriendRepository.SimpleCallback() {
                                     @Override
@@ -112,7 +114,22 @@ public class FriendTimetableFragment extends Fragment {
                                 });
                     })
                     .setNegativeButton("취소", null)
-                    .show();
+                    .create();
+
+            // 다이얼로그 표시 후 버튼 색상 변경
+            dialog.setOnShowListener(dialogInterface -> {
+                Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+                if (positiveButton != null) {
+                    positiveButton.setTextColor(Color.parseColor("#3182F7"));
+                }
+                if (negativeButton != null) {
+                    negativeButton.setTextColor(Color.parseColor("#3182F7"));
+                }
+            });
+
+            dialog.show();
         });
 
         // 친구 시간표 listen
